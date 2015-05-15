@@ -129,8 +129,6 @@ class Jusolink(__with_metaclass(Singleton,object)):
             if PerPage != None :
                 if PerPage < 0 :
                     PerPage = 20 
-                if PerPage > 100 :
-                    PerPage = 100
 
             url = "/Search?Searches="
  
