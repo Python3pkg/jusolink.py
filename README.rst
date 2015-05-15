@@ -1,7 +1,7 @@
 ####
 jusolink.py
 ####
-jusoink 1.0.0
+jusoink 1.0.1
 
 주소링크 API for Python.
 
