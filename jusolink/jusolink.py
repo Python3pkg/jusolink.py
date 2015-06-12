@@ -143,10 +143,10 @@ class Jusolink(__with_metaclass(Singleton,object)):
                 url += "&PerPage=" + str(PerPage)
 
             if noSuggest != None and noSuggest :
-                ulr += "&noSuggest=true"
+                url += "&noSuggest=true"
 
             if noDiff != None and noDiff :
-                ulr += "&noDifferential=true"
+                url += "&noDifferential=true"
 
             return self._httpget(url)
 
