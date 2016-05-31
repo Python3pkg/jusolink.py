@@ -6,13 +6,15 @@
 # http://www.jusolink.com
 # Author : Jeong yohan (yhjeong@linkhub.co.kr)
 # Written : 2015-05-12
-# Thanks for your interest. 
+# Updated : 2016-05-31
+# Thanks for your interest.
 from io import BytesIO
 import datetime
 import json
 from json import JSONEncoder
 from urllib import quote
 from collections import namedtuple
+from time import time as stime
 try:
     import http.client as httpclient
 except ImportError:
@@ -41,8 +43,8 @@ class Singleton(type):
         return cls._instances[cls]
 
 class Jusolink(__with_metaclass(Singleton,object)):
-    def __init__(self,LinkID,SecretKey):
-        """ 생성자. 
+    def __init__(self,LinkID,SecretKey,timeOut=15):
+        """ 생성자.
             args
                 LinkID : 링크허브에서 발급받은 LinkID
                 SecretKey : 링크허브에서 발급받은 SecretKey
@@ -52,11 +54,16 @@ class Jusolink(__with_metaclass(Singleton,object)):
         self.__scopes = ["200"]
         self.__tokenCache = None
         self.__conn = None
+        self.__connectedAt = stime()
+        self.__timeOut = timeOut
 
     def _getConn(self):
-        if self.__conn == None:
+        if stime() - self.__connectedAt >= self.__timeOut or self.__conn == None:
             self.__conn = httpclient.HTTPSConnection(ServiceURL);
-        return self.__conn
+            self.__connectedAt = stime()
+            return self.__conn
+        else:
+            return self.__conn
 
     def _getToken(self):
 
@@ -68,12 +75,12 @@ class Jusolink(__with_metaclass(Singleton,object)):
         refreshToken = True
 
         if token != None :
-            refreshToken = token.expiration[:-5] < datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")
-            
+            refreshToken = token.expiration[:-5] < linkhub.getTime()
+
         if refreshToken :
             try:
                 token = linkhub.generateToken(self.__linkID,self.__secretKey, ServiceID, None, self.__scopes)
-                
+
                 self.__tokenCache = token
 
             except LinkhubException as LE:
@@ -83,14 +90,16 @@ class Jusolink(__with_metaclass(Singleton,object)):
 
     def _httpget(self,url,CorpNum = None,UserID = None):
 
+        conn = self._getConn()
+
         headers = {"x-api-version" : APIVersion}
         headers["Authorization"] = "Bearer " + self._getToken().session_token
-        
-        self._getConn().request('GET',url,'',headers)
 
-        response = self._getConn().getresponse()
+        conn.request('GET',url,'',headers)
+
+        response = conn.getresponse()
         responseString = response.read()
-        
+
         if response.status != 200 :
             err = Utils.json2obj(responseString)
             raise JusolinkException(int(err.code),err.message)
@@ -113,7 +122,7 @@ class Jusolink(__with_metaclass(Singleton,object)):
         """ 주소검색 단가 확인
             return
                 전송 단가 by float
-            raise 
+            raise
                 JusolinkException
         """
 
@@ -122,16 +131,16 @@ class Jusolink(__with_metaclass(Singleton,object)):
 
     def search(self, Index, PageNum, PerPage = None, noSuggest = None, noDiff = None):
         try:
-            
+
             if PageNum != None and PageNum < 1 :
                 PageNum = None
 
             if PerPage != None :
                 if PerPage < 0 :
-                    PerPage = 20 
+                    PerPage = 20
 
             url = "/Search?Searches="
- 
+
             if Index == None and Index == "" :
                 raise JusolinkException(-99999999,"검색어가 입력되지 않았습니다.")
 
@@ -165,7 +174,7 @@ class JsonObject(object):
             d = dic.__dict__
         except AttributeError :
             d = dic._asdict()
-        
+
         self.__dict__.update(d)
 
     def __getattr__(self,name):
@@ -183,14 +192,14 @@ class JusoInfo(object):
 
 class JusolinkEncoder(JSONEncoder):
     def default(self, o):
-        return o.__dict__    
+        return o.__dict__
 
 
 class Utils:
     @staticmethod
     def _json_object_hook(d): return JsonObject(namedtuple('JsonObject', d.keys())(*d.values()))
-    
+
     @staticmethod
-    def json2obj(data): 
+    def json2obj(data):
         if(type(data) is bytes): data = data.decode()
         return json.loads(data, object_hook=Utils._json_object_hook)
