@@ -1,12 +1,12 @@
 ####
 jusolink.py
 ####
-jusoink 1.0.2
+jusoink 1.0.3
 
 주소링크 API for Python.
 
 * requirements
- 
+
   * Python 2.6+
   * linkhub
 
