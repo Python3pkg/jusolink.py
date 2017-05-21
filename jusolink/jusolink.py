@@ -12,13 +12,13 @@ from io import BytesIO
 import datetime
 import json
 from json import JSONEncoder
-from urllib import quote
+from urllib.parse import quote
 from collections import namedtuple
 from time import time as stime
 try:
     import http.client as httpclient
 except ImportError:
-    import httplib as httpclient
+    import http.client as httpclient
 import mimetypes
 
 import linkhub
@@ -197,7 +197,7 @@ class JusolinkEncoder(JSONEncoder):
 
 class Utils:
     @staticmethod
-    def _json_object_hook(d): return JsonObject(namedtuple('JsonObject', d.keys())(*d.values()))
+    def _json_object_hook(d): return JsonObject(namedtuple('JsonObject', list(d.keys()))(*list(d.values())))
 
     @staticmethod
     def json2obj(data):
